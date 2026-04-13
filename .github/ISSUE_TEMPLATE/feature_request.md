@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for improving the RPi Reporter MQTT2HA Daemon
+about: Suggest an idea for improving the Debian Reporter MQTT2HA Daemon
 title: ''
 labels: feature request
 assignees: ''

@@ -35,10 +35,10 @@ except ImportError:
     apt_available = False
 
 script_version = "1.9.x"
-script_name = 'ISP-RPi-mqtt-daemon.py'
+script_name = 'ISP-Debian-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
-project_name = 'RPi Reporter MQTT2HA Daemon'
-project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
+project_name = 'Debian Reporter MQTT2HA Daemon'
+project_url = 'https://github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon'
 
 # we'll use this throughout
 local_tz = get_localzone()
@@ -259,7 +259,7 @@ update_flag_filespec = config['Daemon'].get(
 default_base_topic = 'home/nodes'
 base_topic = config['MQTT'].get('base_topic', default_base_topic).lower()
 
-default_sensor_name = 'rpi-reporter'
+default_sensor_name = 'debian-reporter'
 # Sensor name could be set either via configuration file or `MQTT_SENSOR_NAME`
 # environment variable, the latter takes precedence
 sensor_name = os.environ.get(
@@ -271,14 +271,14 @@ default_discovery_prefix = 'homeassistant'
 discovery_prefix = config['MQTT'].get(
     'discovery_prefix', default_discovery_prefix).lower()
 
-# report our RPi values every 5min
+# report our system values every 5min
 min_interval_in_minutes = 1
 max_interval_in_minutes = 30
 default_interval_in_minutes = 5
 interval_in_minutes = config['Daemon'].getint(
     'interval_in_minutes', default_interval_in_minutes)
 
-# check our RPi pending-updates every 4 hours
+# check our system pending-updates every 4 hours
 min_check_interval_in_hours = 2
 max_check_interval_in_hours = 24
 default_check_interval_in_hours = 4
@@ -396,12 +396,13 @@ def invoke_shell_cmd(cmd):
 
 
 # -----------------------------------------------------------------------------
-#  RPi variables monitored
+#  System variables monitored
 # -----------------------------------------------------------------------------
 
 rpi_mac = ''
 rpi_model_raw = ''
 rpi_model = ''
+rpi_manufacturer = ''
 rpi_connections = ''
 rpi_hostname = ''
 rpi_fqdn = ''
@@ -557,29 +558,59 @@ def getDeviceMemory():
 def getDeviceModel():
     global rpi_model
     global rpi_model_raw
+    global rpi_manufacturer
     global rpi_connections
-    stdout, _, returncode = invoke_shell_cmd("/bin/cat /proc/device-tree/model | /bin/sed -e 's/\\x0//g'")
     rpi_model_raw = 'N/A'
-    if not returncode:
-        rpi_model_raw = stdout.decode('utf-8')
-    # now reduce string length (just more compact, same info)
-    rpi_model = rpi_model_raw.replace('Raspberry ', 'R').replace(
-        'i Model ', 'i 1 Model').replace('Rev ', 'r').replace(' Plus ', '+')
+    rpi_manufacturer = 'Unknown'
 
-    # now decode interfaces
-    rpi_connections = 'e,w,b'  # default
-    if 'Pi 3 ' in rpi_model:
-        if ' A ' in rpi_model:
-            rpi_connections = 'w,b'
-        else:
-            rpi_connections = 'e,w,b'
-    elif 'Pi 2 ' in rpi_model:
-        rpi_connections = 'e'
-    elif 'Pi 1 ' in rpi_model:
-        if ' A ' in rpi_model:
-            rpi_connections = ''
-        else:
-            rpi_connections = 'e'
+    # Try DMI data first (works on x86, VMs, and most servers)
+    dmi_product = '/sys/devices/virtual/dmi/id/product_name'
+    dmi_vendor = '/sys/devices/virtual/dmi/id/sys_vendor'
+    if os.path.exists(dmi_product):
+        stdout, _, returncode = invoke_shell_cmd('/bin/cat {}'.format(dmi_product))
+        if not returncode:
+            rpi_model_raw = stdout.decode('utf-8').rstrip()
+        # read vendor as manufacturer
+        if os.path.exists(dmi_vendor):
+            stdout, _, returncode = invoke_shell_cmd('/bin/cat {}'.format(dmi_vendor))
+            if not returncode:
+                vendor = stdout.decode('utf-8').rstrip()
+                if vendor:
+                    rpi_manufacturer = vendor
+                    if vendor not in rpi_model_raw:
+                        rpi_model_raw = '{} {}'.format(vendor, rpi_model_raw)
+    # Fallback to device-tree model (ARM boards including Raspberry Pi)
+    elif os.path.exists('/proc/device-tree/model'):
+        stdout, _, returncode = invoke_shell_cmd("/bin/cat /proc/device-tree/model | /bin/sed -e 's/\\x0//g'")
+        if not returncode:
+            rpi_model_raw = stdout.decode('utf-8')
+            # Extract manufacturer from first word of device-tree model (e.g., "Raspberry Pi 4 Model B" -> "Raspberry Pi Foundation")
+            dt_model = rpi_model_raw.strip()
+            if dt_model.startswith('Raspberry'):
+                rpi_manufacturer = 'Raspberry Pi'
+            elif dt_model:
+                rpi_manufacturer = dt_model.split()[0]
+
+    rpi_model = rpi_model_raw
+
+    # Detect available network interface types dynamically
+    connections = []
+    stdout, _, returncode = invoke_shell_cmd("/bin/ls /sys/class/net/")
+    if not returncode:
+        ifaces = stdout.decode('utf-8').split()
+        for iface in ifaces:
+            if iface == 'lo':
+                continue
+            if iface.startswith(('eth', 'en')):
+                if 'e' not in connections:
+                    connections.append('e')
+            elif iface.startswith(('wlan', 'wl')):
+                if 'w' not in connections:
+                    connections.append('w')
+            elif iface.startswith(('bt', 'hci')):
+                if 'b' not in connections:
+                    connections.append('b')
+    rpi_connections = ','.join(connections) if connections else ''
 
     print_line('rpi_model_raw=[{}]'.format(rpi_model_raw), debug=True)
     print_line('rpi_model=[{}]'.format(rpi_model), debug=True)
@@ -588,11 +619,23 @@ def getDeviceModel():
 
 def getLinuxRelease():
     global rpi_linux_release
-    stdout, _, returncode = invoke_shell_cmd(
-        "/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u")
     rpi_linux_release = 'N/A'
-    if not returncode:
-        rpi_linux_release = stdout.decode('utf-8').rstrip()
+    # Prefer /etc/os-release (works on all modern Debian/Ubuntu systems)
+    if os.path.exists('/etc/os-release'):
+        stdout, _, returncode = invoke_shell_cmd(
+            "/bin/grep '^VERSION_CODENAME=' /etc/os-release | /usr/bin/cut -d'=' -f2")
+        if not returncode:
+            result = stdout.decode('utf-8').rstrip()
+            if result:
+                rpi_linux_release = result
+    # Fallback to parsing apt sources.list
+    if rpi_linux_release == 'N/A':
+        stdout, _, returncode = invoke_shell_cmd(
+            "/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u")
+        if not returncode:
+            result = stdout.decode('utf-8').rstrip()
+            if result:
+                rpi_linux_release = result
     print_line('rpi_linux_release=[{}]'.format(rpi_linux_release), debug=True)
 
 
@@ -682,7 +725,7 @@ def getUptime():
 
 
 def getNetworkIFsUsingIP(ip_cmd):
-    cmd_str = '{} link show | /bin/egrep -v "link" | /bin/egrep " eth| wlan"'.format(
+    cmd_str = '{} link show | /bin/egrep -v "link" | /bin/egrep " eth| enp| ens| eno| wlan| wlp"'.format(
         ip_cmd)
     stdout, _, returncode = invoke_shell_cmd(cmd_str)
     lines = []
@@ -690,8 +733,6 @@ def getNetworkIFsUsingIP(ip_cmd):
         lines = stdout.decode('utf-8').split("\n")
     interfaceNames = []
     line_count = len(lines)
-    if line_count > 2:
-        line_count = 2
     if line_count == 0:
         print_line('ERROR no lines left by ip(8) filter!', error=True)
         sys.exit(1)
@@ -767,7 +808,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
         # print_line('- currLine=[{}]'.format(currLine), debug=True)
         # print_line('- lineParts=[{}]'.format(lineParts), debug=True)
         if len(lineParts) > 0:
-            # skip interfaces generated by Home Assistant on RPi
+            # skip interfaces generated by Home Assistant / Docker
             if 'docker' in currLine or 'veth' in currLine or 'hassio' in currLine:
                 haveIF = False
                 continue
@@ -1074,7 +1115,7 @@ def getSystemThermalStatus():
     rpi_throttle_status = []
     cmd_fspec = getVcGenCmd()
     if cmd_fspec == '':
-        rpi_throttle_status.append('Not Available')
+        rpi_throttle_status.append('Not throttled')
     else:
         cmd_string = "{} get_throttled".format(cmd_fspec)
         stdout, _, returncode = invoke_shell_cmd(cmd_string)
@@ -1236,7 +1277,7 @@ def getNumberOfAvailableUpdates():
 
 # get our hostnames so we can setup MQTT
 getHostnames()
-sensor_name = 'rpi-{}'.format(rpi_hostname)
+sensor_name = 'debian-{}'.format(rpi_hostname)
 
 # get model so we can use it too in MQTT
 getDeviceModel()
@@ -1382,7 +1423,7 @@ sd_notifier.notify('READY=1')
 #  Perform our MQTT Discovery Announcement...
 # -----------------------------------------------------------------------------
 
-# what RPi device are we on?
+# what device are we on?
 # get our hostnames so we can setup MQTT
 getNetworkIFs()  # this will fill-in rpi_mac
 
@@ -1391,10 +1432,10 @@ mac_left = mac_basic[:6]
 mac_right = mac_basic[6:]
 print_line('mac lt=[{}], rt=[{}], mac=[{}]'.format(
     mac_left, mac_right, mac_basic), debug=True)
-uniqID = "RPi-{}Mon{}".format(mac_left, mac_right)
+uniqID = "Debian-{}Mon{}".format(mac_left, mac_right)
 
-# our RPi Reporter device
-# KeyError: 'home310/sensor/rpi-pi3plus/values' let's not use this 'values' as topic
+# our Debian Reporter device
+# KeyError: 'home310/sensor/debian-pi3plus/values' let's not use this 'values' as topic
 K_LD_MONITOR = "monitor"
 K_LD_SYS_TEMP = "temperature"
 K_LD_FS_USED = "disk_used"
@@ -1420,7 +1461,7 @@ if cpu_model.find("ARMv7") >= 0 or cpu_model.find("ARMv6") >= 0:
 else:
     cpu_use_icon = "mdi:cpu-64-bit"
 
-print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
+print_line('Announcing Debian Monitoring device to MQTT broker for auto-discovery ...')
 
 # Publish our MQTT auto discovery
 #  table of key items to publish:
@@ -1429,9 +1470,9 @@ detectorValues = OrderedDict([
         title="Monitor",
         topic_category="sensor",
         device_class="timestamp",
-        device_ident="RPi-{}".format(rpi_fqdn),
+        device_ident="Debian-{}".format(rpi_fqdn),
         no_title_prefix="yes",
-        icon='mdi:raspberry-pi',
+        icon='mdi:linux',
         json_attr="yes",
         json_value="timestamp",
     )),
@@ -1539,7 +1580,7 @@ for [sensor, params] in detectorValues.items():
     if 'device_ident' in params:
         payload['dev'] = {
             'identifiers': ["{}".format(uniqID)],
-            'manufacturer': 'Raspberry Pi (Trading) Ltd.',
+            'manufacturer': rpi_manufacturer,
             'name': params['device_ident'],
             'model': '{}'.format(rpi_model),
             'sw_version': "{} {}".format(rpi_linux_release, rpi_linux_version)

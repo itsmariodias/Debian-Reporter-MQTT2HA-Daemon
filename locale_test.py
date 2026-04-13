@@ -13,8 +13,8 @@ from colorama import Fore, Back, Style
 script_version = "1.0.0"
 script_name = 'locale_test.py'
 script_info = '{} v{}'.format(script_name, script_version)
-project_name = 'RPi Reporter MQTT2HA Daemon'
-project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
+project_name = 'Debian Reporter MQTT2HA Daemon'
+project_url = 'https://github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon'
 
 def print_line(text, error=False, warning=False, info=False, verbose=False, debug=False, console=True):
     timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())

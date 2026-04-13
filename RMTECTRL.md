@@ -1,4 +1,4 @@
-# Setting up RPi Control from Home Assistant
+# Setting up System Control from Home Assistant
 
 ![Project Maintenance][maintenance-shield]
 
@@ -8,13 +8,15 @@
 
 [![GitHub Release][releases-shield]][releases]
 
-## RPi Reporter MQTT2HA Daemon
+## Debian Reporter MQTT2HA Daemon
 
-The RPi Reporter Daemon is a simple Linux python script which queries the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation. 
+The Debian Reporter Daemon is a simple Linux python script which queries the Debian system on which it is running for various configuration and status values which it then reports via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation.
 
-This page describes how to enable control features over your RPi which would allow you to shutdown or reboot your RPi from within Home Assistant.  Enabling this feature allows you to add buttons to your RPi display in HA (e.g., press a button to reboot your RPi) and it also activates the MQTT listening features so that the RPi can hear the request and run the associated script (e.g., reboot)
+This is a fork of the [RPi Reporter MQTT2HA Daemon](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon) by [Stephen M Moraco (IronSheep)](https://github.com/ironsheep), adapted for generic Debian systems.
 
-In order for this to work you need to make a few adjustments on each RPi you wish to control:
+This page describes how to enable control features over your system which would allow you to shutdown or reboot your system from within Home Assistant. Enabling this feature allows you to add buttons to your system display in HA (e.g., press a button to reboot your system) and it also activates the MQTT listening features so that the system can hear the request and run the associated script (e.g., reboot)
+
+In order for this to work you need to make a few adjustments on each system you wish to control:
 
 - Enable optional settings in your `config.ini`
 - Add permissions to run each command for the user underwhich the Daemon script runs
@@ -29,47 +31,47 @@ On this Page:
 - [Updates to MQTT Interface](#mqtt-interface-when-commanding-is-enabled) - shows what changes when the commanding interface is exposed
 - [Script Configuration](#configuring-the-daemon) - configuring the Daemon to offer the commanding interface
 - [Permissions Configuration](#enabling-the-daemon-to-run-external-commands) - allow the Daemon to run the new commands
-- [Add initial card to HA]() - create your first button in Home Assistant allowing you to reboot your RPi
+- [Add initial card to HA]() - create your first button in Home Assistant allowing you to reboot your system
 
 Additional pages:
 
 - [Overall Daemon Instructions](/README.md) - This project top level README
-- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying this RPi Monitor data very easy.
+- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying monitor data very easy.
 - [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes.
 
 ## MQTT Interface when commanding is enabled
 
-### RPi Device
+### Device
 
-The Daemon already reports each RPi device as:
+The Daemon already reports each device as:
 
-| Name           | Description                                  |
-| -------------- | -------------------------------------------- |
-| `Manufacturer` | Raspberry Pi (Trading) Ltd.                  |
-| `Model`        | RPi 4 Model B v1.1                           |
-| `Name`         | (fqdn) pimon1.home                           |
-| `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
+| Name           | Description                                          |
+| -------------- | ---------------------------------------------------- |
+| `Manufacturer` | Debian                                               |
+| `Model`        | System model (from DMI or device-tree)               |
+| `Name`         | (fqdn) myhost.home                                  |
+| `software ver` | OS Name, Version (e.g., bookworm 6.1.0-18-amd64)    |
 
-### RPi MQTT Topics
+### MQTT Topics
 
-The Daemon also reports five topics for each RPi device:
+The Daemon also reports five topics for each device:
 
 | Name            | Device Class  | Units       | Description                                                                                                                                                                    |
 | --------------- | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `~/monitor`     | 'timestamp'   | n/a         | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**) |
+| `~/monitor`     | 'timestamp'   | n/a         | Is a timestamp which shows when the system last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**) |
 | `~/temperature` | 'temperature' | degrees C   | Shows the latest system temperature                                                                                                                                            |
 | `~/disk_used`   | none          | percent (%) | Shows the percent of root file system used                                                                                                                                     |
 | `~/cpu_load`    | none          | percent (%) | Shows CPU load % over the last 5 minutes                                                                                                                                       |
 | `~/mem_used`    | none          | percent (%) | Shows the percent of RAM used                                                                                                                                                  |
 
-### RPi MQTT Command Topics
+### MQTT Command Topics
 
-Once the commanding is enabled then the Daemon also reports the commanding interface for the RPi. By default we've provided examples for enabling three commands (See `config.ini.dist`.) This is what the commanding interface looks like when all three are enabled:
+Once the commanding is enabled then the Daemon also reports the commanding interface for the system. By default we've provided examples for enabling three commands (See `config.ini.dist`.) This is what the commanding interface looks like when all three are enabled:
 
 | Name            | Device Class  |  Description                                                                                                                                                                    |
 | --------------- |  ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `~/shutdown` | button |  Send request to this endpoint to shut the RPi down                                                                                                                                          |
-| `~/reboot`   | button          | Send request to this endpoint to reboot the RPi                                                                                                                                    |
+| `~/shutdown` | button |  Send request to this endpoint to shut the system down                                                                                                                                          |
+| `~/reboot`   | button          | Send request to this endpoint to reboot the system                                                                                                                                    |
 | `~/restart_service`    | button          |  Send request to this endpoint to restart the Daemon service          
 
 The new content in `config.ini.dist` should look like something like this: 
@@ -78,12 +80,12 @@ The new content in `config.ini.dist` should look like something like this:
 [Commands]
 #shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
 #reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
-#restart_service = /usr/bin/sudo systemctl restart isp-rpi-reporter.service
+#restart_service = /usr/bin/sudo systemctl restart isp-debian-reporter.service
 ```
                                              
 ## Configuring the Daemon
 
-By adding commands you'd like to initiate remotely to your configuration file `config.ini` you will then be able to execute these commands on the monitored Raspberry Pis using MQTT, meaning yes, from buttons in your Home Assistant interface!
+By adding commands you'd like to initiate remotely to your configuration file `config.ini` you will then be able to execute these commands on the monitored systems using MQTT, meaning yes, from buttons in your Home Assistant interface!
 
 After adding the comamnds to your `config.ini`, you then need to accomplish a couple more steps to activate these commands.  Here is the overall list of 4 steps \[S1-S4\]  we need to take:
 
@@ -99,20 +101,20 @@ After adding the comamnds to your `config.ini`, you then need to accomplish a co
 
 Copy this new `[Commands]` section from the `config.ini.dist` (which we provide for reference) to your `config.ini` and then uncomment the commands you wish to activate (by removing the leading '#' character on each line).
 
-In the following we've enabled all three commands  which now gives us commands to reboot, shutdown, or restart the RPi reporting service on the Pi:
+In the following we've enabled all three commands  which now gives us commands to reboot, shutdown, or restart the system reporting service on the Pi:
 
 ```shell
 [Commands]
 shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
 reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
-restart_service = /usr/bin/sudo systemctl restart isp-rpi-reporter.service
+restart_service = /usr/bin/sudo systemctl restart isp-debian-reporter.service
 ```
 
 *NOTE* the message in the `{action} rqst via MQTT` message (shutdown or reboot) is logged in `/var/log/auth.log` so one can keep track of when commands are executed via MQTT.
   
 ### S2: Verify absolute path to each command you use
 
-By default we want to keep our RPi security very tight. To that end, we actually specify absolute paths for commands that we want the Daemon to be able to execute.
+By default we want to keep our system security very tight. To that end, we actually specify absolute paths for commands that we want the Daemon to be able to execute.
 
 In some systems the path for `systemctl` / `reboot` / `shutdown` can be different.  Make sure the path you specify is correct for your system.
 
@@ -130,7 +132,7 @@ Ensure that the new lines you added to your `config.ini` use exactly these full 
 
 ### S3: Enabling the Daemon to run external commands
 
-Again, by default, we want to keep our RPi security very tight. To that end, we actually specify each command that we want the Daemon to be able to execute.  We do this my making changes to the sudo(8) control file `/etc/sudoers`
+Again, by default, we want to keep our system security very tight. To that end, we actually specify each command that we want the Daemon to be able to execute.  We do this my making changes to the sudo(8) control file `/etc/sudoers`
 
 The "daemon" user we use to start the daemon in the installation instructions doesn't have enough privileges to reboot or power down the computer. The workaround we'll use is to give permissions to daemon to be able to run the commands we want to execute using the sudoers configuration file.  There is an older and a newer way to do this.  Here are both ways #1, and #2 (choose #1 if the directory is present):
 
@@ -138,7 +140,7 @@ The "daemon" user we use to start the daemon in the installation instructions do
 
 On my newer systems there is an `/etc/sudoers.d/` directory.  In that directory I create a new file numbering it so it is read later in the loading effort.  I use the name `020_daemon` for this file.
 
-*NOTE: in the following you MUST replace `<raspberrypihostname>` with the name of your RPi. So in the case of my RPi with a hostname of `rpibtle.home` I replace `<raspberrypihostname>` with `rpibtle`*
+*NOTE: in the following you MUST replace `<hostname>` with the name of your system. So in the case of a system with a hostname of `myserver.home` I replace `<hostname>` with `myserver`*
 
   ```shell
   # edit sudoers file
@@ -147,7 +149,7 @@ On my newer systems there is an `/etc/sudoers.d/` directory.  In that directory 
   # add the following lines to the empty file:
   
   # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter.service,/sbin/shutdown
+  daemon <hostname> =NOPASSWD: /usr/bin/systemctl restart isp-debian-reporter.service,/sbin/shutdown
   ```
   
 **NOTE:** *We use visudo(8) so that we are not locked out of our system if we leave an error in our sudoers file! This is VERY IMPORTANT, please be careful. If yhou do get into trouble refer to [How to restore a broken sudoers file without being able to use sudo](https://unix.stackexchange.com/questions/677591/how-to-restore-a-broken-sudoers-file-without-being-able-to-use-sudo) to get things working again.*
@@ -156,7 +158,7 @@ On my newer systems there is an `/etc/sudoers.d/` directory.  In that directory 
 
 When the directory is not found then we, instead, add our new content to the existing control file by placing it at the end of the file (after all existing content):
 
-*NOTE: in the following you MUST replace `<raspberrypihostname>` with the name of your RPi. So in the case of my RPi with a hostname of `rpibtle.home` I replace `<raspberrypihostname>` with `rpibtle`*
+*NOTE: in the following you MUST replace `<hostname>` with the name of your system. So in the case of a system with a hostname of `myserver.home` I replace `<hostname>` with `myserver`*
 
   ```shell
   # edit sudoers file
@@ -165,7 +167,7 @@ When the directory is not found then we, instead, add our new content to the exi
   # add the following lines at the bottom of the file
   
   # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter.service,/sbin/shutdown
+  daemon <hostname> =NOPASSWD: /usr/bin/systemctl restart isp-debian-reporter.service,/sbin/shutdown
   ```
   
 **NOTE:** *We use visudo(8) so that we are not locked out of our system if we leave an error in our sudoers file! This is VERY IMPORTANT, please be careful. If yhou do get into trouble refer to [How to restore a broken sudoers file without being able to use sudo](https://unix.stackexchange.com/questions/677591/how-to-restore-a-broken-sudoers-file-without-being-able-to-use-sudo) to get things working again.*
@@ -176,10 +178,10 @@ Additionally, the daemon user needs permission to execute any external tools ref
 
 ```shell
 # change to where your reporter is installed.  Typically:
-cd /opt/RPi-Reporter-MQTT2HA-Daemon
+cd /opt/Debian-Reporter-MQTT2HA-Daemon
 
 # adjust the owner of the script
-sudo chown daemon ISP-RPi-mqtt-daemon.py
+sudo chown daemon ISP-Debian-mqtt-daemon.py
 ```
 
 This then ensures that the script is owned by the daemon account and will ask for permissions as the Daemon user to run external scripts.
@@ -198,17 +200,17 @@ Let's go into a bit more detail for some of these steps.
 
 ### V1: Restart the daemon
 
-You'll need to restart the Daemon or reboot the RPi to get your changes to take effect.
+You'll need to restart the Daemon or reboot the system to get your changes to take effect.
 Then you'll want to see if the new control interface is exposed.  I check out what's appearing in MQTT by using a tool like [MQTT Explorer](http://mqtt-explorer.com/).
 
 ### V2: Use the card built by Home Assistant Discovery to test your new controls
 
-In your Home Assistant Interface navigate to: Settings->Devices & Services->Devices and scroll to the device that represents your RPi just configured.
+In your Home Assistant Interface navigate to: Settings->Devices & Services->Devices and scroll to the device that represents your system just configured.
 
 You should see somthing like this:
 ![Discovery List](./Docs/images/Device-list.png)
 
-Next click on the device that is your RPi. I'll click on RPi-pibtle.home in this list.
+Next click on the device that is your system. I'll click on Debian-pibtle.home in this list.
 
 You should now see something like this:
 ![Discovery List](./Docs/images/Discovered-Device.png)
@@ -218,7 +220,7 @@ The green arrow (above) points out the control interface that device discovery c
 
 ### V3: Ensure the action occurred
 
-Next I pressed the reboot button on the new interface. I was logged into the RPi at the time so when the reboot occurred it kicked me off which told me it was working well.
+Next I pressed the reboot button on the new interface. I was logged into the system at the time so when the reboot occurred it kicked me off which told me it was working well.
 
 ### V4: Verify that the message appeared in the logs
 
@@ -227,36 +229,31 @@ Lastly I wanted to ensure the action was logged so I did a simple grep for "via"
 With this finding i've verified that this is all working for me!
 (*now you can do the same!*)
 
-## Want to go further? Build a custom HA RPi Control card
+## Want to go further? Build a custom HA Control card
 
 Refer to the [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) page for details but there is a [specific example button card](https://github.com/ironsheep/lovelace-rpi-monitor-card#example-control-of-your-rpi-avail-in-daemon-v180-and-later)
 
-This was originally built by copying the card suggested by looking at the RPi Device as discovered by home assistant.  In that display it shows an example interface card and allows you to copy the suggestion to your clipboard.  I then pasted this card into the page yaml where I wanted the card to be shown. I then overrode the names with simple more direct names than the default button names.  That's it. It just worked.
+This was originally built by copying the card suggested by looking at the Device as discovered by home assistant.  In that display it shows an example interface card and allows you to copy the suggestion to your clipboard.  I then pasted this card into the page yaml where I wanted the card to be shown. I then overrode the names with simple more direct names than the default button names.  That's it. It just worked.
 
 ---
 
-> If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
+> This is a fork of the [RPi Reporter MQTT2HA Daemon](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon) by [Stephen M Moraco (IronSheep)](https://github.com/ironsheep). If you find this project useful, please consider supporting the original developer:
 >
 > [![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep) &nbsp;&nbsp; -OR- &nbsp;&nbsp; [![Patreon](./Docs/images/patreon.png)](https://www.patreon.com/IronSheep?fan_landing=true)[Patreon.com/IronSheep](https://www.patreon.com/IronSheep?fan_landing=true)
 
 ---
 
-
 ## Disclaimer and Legal
 
-> _Raspberry Pi_ is registered trademark of _Raspberry Pi (Trading) Ltd._
->
 > This project is a community project not for commercial use.
-> The authors will not be held responsible in the event of device failure or simply errant reporting of your RPi status.
->
-> This project is in no way affiliated with, authorized, maintained, sponsored or endorsed by _Raspberry Pi (Trading) Ltd._ or any of its affiliates or subsidiaries.
+> The authors will not be held responsible in the event of device failure or simply errant reporting of your system status.
 
 ---
 
 ### [Copyright](copyright) | [License](LICENSE)
 
-[commits-shield]: https://img.shields.io/github/commit-activity/y/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
-[commits]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/commits/master
-[maintenance-shield]: https://img.shields.io/badge/maintainer-stephen%40ironsheep.biz-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
-[releases]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases
+[commits-shield]: https://img.shields.io/github/commit-activity/y/itsmariodias/Debian-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
+[commits]: https://github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon/commits/master
+[maintenance-shield]: https://img.shields.io/badge/maintainer-itsmariodias-blue.svg?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/release/itsmariodias/Debian-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
+[releases]: https://github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon/releases

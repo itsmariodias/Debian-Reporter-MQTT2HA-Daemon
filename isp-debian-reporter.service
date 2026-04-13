@@ -1,6 +1,6 @@
 [Unit]
-Description=RPi Reporter MQTT Client/Daemon
-Documentation=https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
+Description=Debian Reporter MQTT Client/Daemon
+Documentation=https://github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon
 After=network.target mosquitto.service network-online.target
 Wants=network-online.target
 Requires=network.target
@@ -9,8 +9,8 @@ Requires=network.target
 Type=notify
 User=daemon
 Group=daemon
-WorkingDirectory=/opt/RPi-Reporter-MQTT2HA-Daemon/
-ExecStart=/usr/bin/python3 -u /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
+WorkingDirectory=/opt/Debian-Reporter-MQTT2HA-Daemon/
+ExecStart=/usr/bin/python3 -u /opt/Debian-Reporter-MQTT2HA-Daemon/ISP-Debian-mqtt-daemon.py
 StandardOutput=null
 StandardError=journal
 Environment=PYTHONUNBUFFERED=1

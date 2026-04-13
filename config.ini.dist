@@ -1,5 +1,5 @@
-# Configuration file for RPi-Reporter-MQTT2HA-Daemon
-# Source: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
+# Configuration file for Debian-Reporter-MQTT2HA-Daemon
+# Source: https://github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon
 #
 # Uncomment and adapt all settings as needed.
 # Some settings can be configured by environment variables.
@@ -10,7 +10,7 @@
 # Enable or Disable an endless execution loop (Default: true)
 #enabled = true
 
-# This script reports RPi values at a fixed interval in minutes [2-30], [Default: 5]
+# This script reports system values at a fixed interval in minutes [2-30], [Default: 5]
 #interval_in_minutes = 5
 
 # This script checks for pending os updates at a fixed internal in hours [2-24], [Default: 4]
@@ -22,7 +22,7 @@
 [Commands]
 #shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
 #reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
-#restart_service = /usr/bin/sudo systemctl restart isp-rpi-reporter.service
+#restart_service = /usr/bin/sudo systemctl restart isp-debian-reporter.service
 
 [MQTT]
 
@@ -45,11 +45,11 @@
 # NOTE: The MQTT topic used for this device is constructed as:
 #  {base_topic}/{sensor_name}
 #
-# The MQTT base topic under which to publish the Raspberry Pi sensor data topics.
+# The MQTT base topic under which to publish the system sensor data topics.
 #base_topic = home/nodes
 
-# The MQTT name for this Raspberry Pi as a sensor
-#sensor_name = rpi-{hostname}
+# The MQTT name for this system as a sensor
+#sensor_name = debian-{hostname}
 
 
 # The MQTT broker authentification credentials (Default: no authentication)

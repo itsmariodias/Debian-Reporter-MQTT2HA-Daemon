@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report an issue you are experiencing with the RPi Reporter MQTT2HA Daemon
+about: Report an issue you are experiencing with the Debian Reporter MQTT2HA Daemon
 title: ''
 labels: bug
 assignees: ''

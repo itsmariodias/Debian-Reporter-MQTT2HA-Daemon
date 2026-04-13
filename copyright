@@ -1,17 +1,23 @@
-This project created by Stephen M Moraco <stephen@ironsheep.biz> on
+This project originally created by Stephen M Moraco <stephen@ironsheep.biz> on
 Thu Jun 11 16:50:43 MDT 2020.
 
-It was downloaded from github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.
+Original project: github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
+Fork (Debian adaptation): github.com/itsmariodias/Debian-Reporter-MQTT2HA-Daemon
 
 Authors:
 
-    Stephen M Moraco <stephen@ironsheep.biz>
+    Stephen M Moraco <stephen@ironsheep.biz> (original author)
+    Mario Dias (Debian fork)
 
 Copyright:
 
-    The overall RPi-Reporter-MQTT2HA-Daemon project is
+    The original RPi-Reporter-MQTT2HA-Daemon project is
 
         Copyright © 2020 Iron Sheep Productions, LLC
+
+    The Debian-Reporter-MQTT2HA-Daemon fork is
+
+        Copyright © 2026 Mario Dias
 
 LICENSE
 
@@ -27,11 +33,5 @@ LICENSE
     You should have received a copy of the GNU General Public License along
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
-
-This project is:
-
-    Copyright © 2020 Iron Sheep Productions, LLC <info@ironsheep.biz>
-
-and is also licensed under the GPL version 3.
 
 For a complete copy of the license, see `[LICENSE](LICENSE)'.
