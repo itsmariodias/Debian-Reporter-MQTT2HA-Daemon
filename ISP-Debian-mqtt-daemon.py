@@ -798,6 +798,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
     #    TX packets 916361  bytes 150440804 (143.4 MiB)
     #
     tmpInterfaces = []
+    all_macs = []
     haveIF = False
     imterfc = ''
     rpi_mac = ''
@@ -825,9 +826,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
                 newTuple = (imterfc, 'mac', lineParts[4])
-                if rpi_mac == '':
-                    rpi_mac = lineParts[4]
-                    print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
+                all_macs.append(lineParts[4])
                 tmpInterfaces.append(newTuple)
                 print_line('newTuple=[{}]'.format(newTuple), debug=True)
             elif haveIF:
@@ -841,9 +840,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 elif 'ether' in currLine:  # NEWER ONLY
                     newTuple = (imterfc, 'mac', lineParts[1])
                     tmpInterfaces.append(newTuple)
-                    if rpi_mac == '':
-                        rpi_mac = lineParts[1]
-                        print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
+                    all_macs.append(lineParts[1])
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                 elif 'RX' in currLine:  # NEWER ONLY
                     previous_value = getPreviousNetworkData(imterfc, 'rx_data')
@@ -861,6 +858,9 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                     haveIF = False
 
+    # Pick the lowest MAC address for a stable device identity across restarts
+    if all_macs:
+        rpi_mac = sorted(all_macs)[0]
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
