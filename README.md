@@ -51,7 +51,7 @@ Each device is reported as:
 
 | Name           | Description                                            |
 | -------------- | ------------------------------------------------------ |
-| `Manufacturer` | Debian                                                 |
+| `Manufacturer` | System vendor (from DMI or device-tree, e.g., Dell Inc., QEMU, Raspberry Pi) |
 | `Model`        | System model (from DMI or device-tree)                 |
 | `Name`         | (fqdn) myhost.home                                    |
 | `software ver` | OS Name, Version (e.g., bookworm 6.1.0-18-amd64)      |

@@ -30,7 +30,7 @@ The Daemon reports each device as:
 
 | Name           | Description                                            |
 | -------------- | ------------------------------------------------------ |
-| `Manufacturer` | Debian                                                 |
+| `Manufacturer` | System vendor (from DMI or device-tree, e.g., Dell Inc., QEMU, Raspberry Pi) |
 | `Model`        | System model (from DMI or device-tree)                 |
 | `Name`         | (fqdn) myhost.home                                    |
 | `software ver` | OS Name, Version (e.g., bookworm 6.1.0-18-amd64)      |
@@ -83,7 +83,7 @@ The `~/monitor` advertisement:
   "json_attr_tpl": "{{ value_json.info | tojson }}",
   "dev": {
     "identifiers": ["Debian-e45f01Monf81801"],
-    "manufacturer": "Debian",
+    "manufacturer": "QEMU",
     "name": "Debian-{HOSTNAME-FQDN}",
     "model": "QEMU Standard PC (Q35 + ICH9, 2009)",
     "sw_version": "bookworm 6.1.0-18-amd64"

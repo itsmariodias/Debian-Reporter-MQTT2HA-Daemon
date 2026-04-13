@@ -356,8 +356,8 @@ def getDaemonReleases():
                 if len(lineParts) >= 2:
                     currVersion = lineParts[0]
                     rlsType = lineParts[1]
-                    if not currVersion in newVersionList:
-                        if not 'latest' in rlsType.lower():
+                    if currVersion not in newVersionList:
+                        if 'latest' not in rlsType.lower():
                             newVersionList.append(currVersion)  # append to list
                         else:
                             latestVersion = currVersion
@@ -365,7 +365,7 @@ def getDaemonReleases():
         if len(newVersionList) > 1:
             newVersionList.sort()
         if len(latestVersion) > 0:
-            if not latestVersion in newVersionList:
+            if latestVersion not in newVersionList:
                 newVersionList.insert(0, latestVersion)  # append to list
 
         daemon_version_list = newVersionList
@@ -434,7 +434,7 @@ rpi_cpuload5 = ''
 rpi_cpuload15 = ''
 rpi_update_count = 0
 
-if apt_available == False:
+if not apt_available:
     rpi_update_count = -1   # if packaging system not avail. report -1
 
 # Time for network transfer calculation
@@ -696,7 +696,6 @@ def getUptime():
     # Ex: 10 days, 23:57
     # Ex: 27 days, 27 min
     # Ex: 0 min
-    bHasColon = (':' in rpi_uptime)
     uptimeParts = rpi_uptime.split(',')
     print_line('- uptimeParts=[{}]'.format(uptimeParts), debug=True)
     if len(uptimeParts) > 1:
@@ -828,7 +827,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
                 tmpInterfaces.append(newTuple)
                 print_line('newTuple=[{}]'.format(newTuple), debug=True)
-            elif haveIF == True:
+            elif haveIF:
                 print_line('IF=[{}], lineParts=[{}]'.format(
                     imterfc, lineParts), debug=True)
                 if 'inet' in currLine:  # OLDER & NEWER
@@ -1014,9 +1013,9 @@ def getVcGenCmd():
     cmd_locn1 = '/usr/bin/vcgencmd'
     cmd_locn2 = '/opt/vc/bin/vcgencmd'
     desiredCommand = cmd_locn1
-    if os.path.exists(desiredCommand) == False:
+    if not os.path.exists(desiredCommand):
         desiredCommand = cmd_locn2
-    if os.path.exists(desiredCommand) == False:
+    if not os.path.exists(desiredCommand):
         desiredCommand = ''
     if desiredCommand != '':
         print_line('Found vcgencmd(1)=[{}]'.format(desiredCommand), debug=True)
@@ -1027,9 +1026,9 @@ def getShellCmd():
     cmd_locn1 = '/usr/bin/sh'
     cmd_locn2 = '/bin/sh'
     desiredCommand = cmd_locn1
-    if os.path.exists(desiredCommand) == False:
+    if not os.path.exists(desiredCommand):
         desiredCommand = cmd_locn2
-    if os.path.exists(desiredCommand) == False:
+    if not os.path.exists(desiredCommand):
         desiredCommand = ''
     if desiredCommand != '':
         print_line('Found sh(1)=[{}]'.format(desiredCommand), debug=True)
@@ -1040,9 +1039,9 @@ def getIPCmd():
     cmd_locn1 = '/bin/ip'
     cmd_locn2 = '/sbin/ip'
     desiredCommand = ''
-    if os.path.exists(cmd_locn1) == True:
+    if os.path.exists(cmd_locn1):
         desiredCommand = cmd_locn1
-    elif os.path.exists(cmd_locn2) == True:
+    elif os.path.exists(cmd_locn2):
         desiredCommand = cmd_locn2
     if desiredCommand != '':
         print_line('Found IP(8)=[{}]'.format(desiredCommand), debug=True)
@@ -1125,7 +1124,7 @@ def getSystemThermalStatus():
         print_line('rpi_throttle_status_raw=[{}]'.format(
             rpi_throttle_status_raw), debug=True)
 
-        if len(rpi_throttle_status_raw) and not 'throttled' in rpi_throttle_status_raw:
+        if len(rpi_throttle_status_raw) and 'throttled' not in rpi_throttle_status_raw:
             rpi_throttle_status.append(
                 'bad response [{}] from vcgencmd'.format(rpi_throttle_status_raw))
         else:
@@ -1401,7 +1400,7 @@ try:
                         port=int(os.environ.get(
                             'MQTT_PORT', config['MQTT'].get('port', '1883'))),
                         keepalive=config['MQTT'].getint('keepalive', 60))
-except:
+except Exception:
     print_line('MQTT connection error. Please check your settings in the configuration file "config.ini"',
                error=True, sd_notify=True)
     sys.exit(1)
@@ -1410,7 +1409,7 @@ else:
     mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()
 
-    while mqtt_client_connected == False:  # wait in loop
+    while not mqtt_client_connected:  # wait in loop
         print_line(
             '* Wait on mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)
         sleep(1.0)  # some slack to establish the connection
@@ -1737,7 +1736,7 @@ def send_status(timestamp, nothing):
     rpiRam = getMemoryDictionary()
     if len(rpiRam) > 0:
         rpiData[K_RPI_MEMORY] = rpiRam
-        ramSizeMB = int('{:.0f}'.format(rpi_memory_tuple[0], 10))  # "mem_space_mbytes"
+        ramSizeMB = int('{:.0f}'.format(rpi_memory_tuple[0]))  # "mem_space_mbytes"
         # used is total - free
         ramUsedMB = int('{:.0f}'.format(rpi_memory_tuple[0] - rpi_memory_tuple[2]), 10)
         ramUsedPercent = int((ramUsedMB / ramSizeMB) * 100)
@@ -1897,7 +1896,7 @@ def handle_interrupt(channel):
     # have PERIOD interrupt!
     update_values()
 
-    if (opt_stall == False or reported_first_time == False and opt_stall == True):
+    if (not opt_stall or not reported_first_time and opt_stall):
         # ok, report our new detection to MQTT
         _thread.start_new_thread(send_status, (current_timestamp, ''))
         reported_first_time = True
