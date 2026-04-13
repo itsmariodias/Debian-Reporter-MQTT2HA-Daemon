@@ -607,9 +607,12 @@ def getDeviceModel():
             elif iface.startswith(('wlan', 'wl')):
                 if 'w' not in connections:
                     connections.append('w')
-            elif iface.startswith(('bt', 'hci')):
-                if 'b' not in connections:
-                    connections.append('b')
+    # Check for Bluetooth adapters (they live under /sys/class/bluetooth/, not /sys/class/net/)
+    stdout, _, returncode = invoke_shell_cmd("/bin/ls /sys/class/bluetooth/ 2>/dev/null")
+    if not returncode:
+        bt_devices = stdout.decode('utf-8').split()
+        if bt_devices:
+            connections.append('b')
     rpi_connections = ','.join(connections) if connections else ''
 
     print_line('rpi_model_raw=[{}]'.format(rpi_model_raw), debug=True)
@@ -878,7 +881,7 @@ def getNetworkIFs():
         getNetworkIFsUsingIP(ip_cmd)
     else:
         stdout, _, returncode = invoke_shell_cmd(
-            '/sbin/ifconfig | /bin/egrep "Link|flags|inet |ether " | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"')
+            r'/sbin/ifconfig | /bin/egrep "Link|flags|inet |ether " | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"')
         lines = []
         if not returncode:
             lines = stdout.decode('utf-8').split("\n")
