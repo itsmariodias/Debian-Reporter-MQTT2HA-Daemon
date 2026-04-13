@@ -152,9 +152,9 @@ print_line(
 mqtt_client_should_attempt_reconnect = True
 
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, reason_code, properties=None):
     global mqtt_client_connected
-    if rc == 0:
+    if reason_code == 0:
         print_line('* MQTT connection established', console=True, sd_notify=True)
         print_line('')  # blank line?!
         # _thread.start_new_thread(afterMQTTConnect, ())
@@ -172,10 +172,10 @@ def on_connect(client, userdata, flags, rc):
         # -------------------------------------------------------------------------
 
     else:
-        print_line('! Connection error with result code {} - {}'.format(str(rc),
-                   mqtt.connack_string(rc)), error=True)
-        print_line('MQTT Connection error with result code {} - {}'.format(str(rc),
-                   mqtt.connack_string(rc)), error=True, sd_notify=True)
+        print_line('! Connection error with result code {} - {}'.format(str(reason_code),
+                   mqtt.connack_string(reason_code)), error=True)
+        print_line('MQTT Connection error with result code {} - {}'.format(str(reason_code),
+                   mqtt.connack_string(reason_code)), error=True, sd_notify=True)
         # technically NOT useful but readying possible new shape...
         mqtt_client_connected = False
         print_line('on_connect() mqtt_client_connected=[{}]'.format(
@@ -184,16 +184,15 @@ def on_connect(client, userdata, flags, rc):
         os._exit(1)
 
 
-def on_disconnect(client, userdata, mid):
+def on_disconnect(client, userdata, flags, reason_code, properties=None):
     global mqtt_client_connected
     mqtt_client_connected = False
     print_line('* MQTT connection lost', console=True, sd_notify=True)
     print_line('on_disconnect() mqtt_client_connected=[{}]'.format(
         mqtt_client_connected), debug=True)
-    pass
 
 
-def on_publish(client, userdata, mid):
+def on_publish(client, userdata, mid, reason_code=None, properties=None):
     # print_line('* Data successfully published.')
     pass
 
@@ -203,8 +202,8 @@ def on_publish(client, userdata, mid):
 # Command catalog
 
 
-def on_subscribe(client, userdata, mid, granted_qos):
-    print_line('on_subscribe() - {} - {}'.format(str(mid), str(granted_qos)), debug=True, sd_notify=True)
+def on_subscribe(client, userdata, mid, reason_code, properties=None):
+    print_line('on_subscribe() - {} - {}'.format(str(mid), str(reason_code)), debug=True, sd_notify=True)
 
 
 shell_cmd_fspec = ''
@@ -1362,10 +1361,9 @@ lwt_online_val = 'online'
 lwt_offline_val = 'offline'
 
 print_line('Connecting to MQTT broker ...', verbose=True)
-# ensure backward compatibility with older versions of paho-mqtt (<=2.0.0)
-# ToDo: Need to update to VERSION2 at some point
+# Use VERSION2 callback API (paho-mqtt >=2.0.0), fall back to old API for older versions
 try:
-    mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+    mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 except AttributeError:
     mqtt_client = mqtt.Client()
 
