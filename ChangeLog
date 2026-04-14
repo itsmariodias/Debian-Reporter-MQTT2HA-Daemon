@@ -1,5 +1,21 @@
 # ChangeLog
 
+Mon, 14 Apr 2026 v2.0.0
+
+- Fork: Rebrand from RPi Reporter to Debian Reporter for generic Debian/Ubuntu systems
+- Renamed script to ISP-Debian-mqtt-daemon.py, service to isp-debian-reporter.service, init script to debian-reporter
+- Hardware detection: use DMI data (/sys/devices/virtual/dmi/id/) for x86/VMs, device-tree fallback for ARM boards
+- Manufacturer detection: dynamically read from sys_vendor (DMI) or device-tree model instead of hardcoded value
+- OS release detection: prefer /etc/os-release VERSION_CODENAME over /etc/apt/sources.list parsing
+- Network interface detection: support modern predictable names (enp*, ens*, eno*, wlp*) alongside classic (eth*, wlan*)
+- Bluetooth detection: scan /sys/class/bluetooth/ instead of /sys/class/net/ for BT adapters
+- Stable device identity: use lowest MAC address across all interfaces for consistent HA discovery IDs
+- MQTT: update to paho-mqtt v2 callback API (CallbackAPIVersion.VERSION2) with backward compatibility fallback
+- Discovery icon changed from mdi:raspberry-pi to mdi:linux
+- Code cleanup: fix bare except, boolean comparisons, unused variables, invalid escape sequences, unused format args
+- Updated all documentation (README, HA-ADVERT, RMTECTRL, config.ini.dist) for generic Debian
+- Added copyright attribution for fork
+
 Mon, 01 May 2023 16:51:08 -0600 v1.8.5
 
 - Handle resubscription if MQTT broker restarts (#99)

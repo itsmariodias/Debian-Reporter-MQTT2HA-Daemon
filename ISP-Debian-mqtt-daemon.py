@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.9.x"
+script_version = "2.0.0"
 script_name = 'ISP-Debian-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'Debian Reporter MQTT2HA Daemon'
