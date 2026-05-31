@@ -1092,16 +1092,17 @@ def getSystemTemperature():
 
 
 def getSystemCPUTemperature():
-    cmd_locn1 = '/sys/class/thermal/thermal_zone0/temp'
-    cmdString = '/bin/cat {}'.format(
-        cmd_locn1)
-
     rpi_cpu_temp = float('-1.0')
-    if os.path.exists(cmd_locn1):
-        stdout, _, returncode = invoke_shell_cmd(cmdString)
-        if not returncode:
-            rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
-            rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+    base = '/sys/class/thermal'
+    if os.path.isdir(base):
+        for zone in os.listdir(base):
+            type_path = '{}/{}/type'.format(base, zone)
+            temp_path = '{}/{}/temp'.format(base, zone)
+            if os.path.exists(type_path) and os.path.exists(temp_path):
+                ztype = open(type_path).read().strip()
+                if ztype in ('x86_pkg_temp', 'coretemp', 'cpu-thermal', 'cpu_thermal'):
+                    rpi_cpu_temp = float(open(temp_path).read().strip()) / 1000.0
+                    break
     print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
     return rpi_cpu_temp
 
